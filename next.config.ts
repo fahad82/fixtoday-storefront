@@ -1,8 +1,9 @@
-// next.config.js
+// next.config.ts
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    domains: [
+
+     domains: [
       'images.unsplash.com',
       'ik.imagekit.io',
       'localhost',
@@ -10,6 +11,7 @@ const nextConfig = {
       'cdn.jsdelivr.net',
       'upload.wikimedia.org'
     ],
+    // Remove deprecated domains array
     remotePatterns: [
       {
         protocol: 'https',
@@ -36,17 +38,31 @@ const nextConfig = {
         pathname: '/**',
       },
       {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
         protocol: 'http',
         hostname: 'localhost',
         port: '3001',
         pathname: '/**',
       },
     ],
-    // Optional: Add image optimization settings
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
-    formats: ['image/webp'],
+    formats: ['image/avif', 'image/webp'],
+    minimumCacheTTL: 60,
   },
+  // Enable React strict mode for better development
+  reactStrictMode: true,
+  // Enable SWC minification for faster builds
+  swcMinify: true,
+  // Compress responses
+  compress: true,
+  // Add trailing slash for consistent routing
+  trailingSlash: false,
 };
 
 module.exports = nextConfig;

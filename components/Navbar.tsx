@@ -59,7 +59,9 @@ const Navbar: React.FC = () => {
   const pathname = usePathname();
   const router = useRouter();
   const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const { getCartCount, getWishlistCount } = useCart();
+  
+  // Get cart items and functions from context
+  const { cartItems, getCartCount, getWishlistCount } = useCart();
 
   // Fetch brands from API
   useEffect(() => {
@@ -265,7 +267,7 @@ const Navbar: React.FC = () => {
     <>
       {/* Top Bar - Offers Section */}
       <div className="bg-gradient-to-r from-amber-600 to-orange-600 text-white py-2.5 overflow-hidden">
-        <div className="container mx-auto px-4">
+       <div className="w-full px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-center gap-8 text-sm font-medium animate-marquee whitespace-nowrap">
             <span>🔥 Limited Time Offer: Up to 40% Off on Select Items!</span>
             <span>✨ Free Shipping on Orders Over $50</span>
@@ -285,7 +287,7 @@ const Navbar: React.FC = () => {
             : 'bg-white shadow-md'
         }`}
       >
-        <div className="container mx-auto px-4">
+        <div className="w-full px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between py-3">
             {/* Left Side - Logo */}
             <div className="flex-shrink-0">
@@ -509,8 +511,12 @@ const Navbar: React.FC = () => {
         </div>
       </nav>
 
-      {/* Cart Drawer */}
-      <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+      {/* Cart Drawer - With key to force re-render when cart changes */}
+      <CartDrawer 
+        key={cartItems.length} 
+        isOpen={isCartOpen} 
+        onClose={() => setIsCartOpen(false)} 
+      />
 
       <style jsx>{`
         @keyframes marquee {

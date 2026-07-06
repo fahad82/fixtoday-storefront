@@ -1,4 +1,4 @@
-// app/checkout/page.tsx
+// app/checkout/page.tsx - COMPLETE FIXED VERSION
 'use client';
 
 import React, { useState } from 'react';
@@ -20,7 +20,12 @@ import {
   FaCity,
   FaFlag,
   FaCheckCircle,
-  FaClock
+  FaClock,
+  FaInfoCircle,
+  FaExclamationTriangle,
+  FaMapMarkedAlt,
+  FaShippingFast,
+  FaSpinner
 } from 'react-icons/fa';
 import { SiVisa, SiMastercard, SiAmericanexpress } from 'react-icons/si';
 
@@ -43,6 +48,9 @@ interface DeliveryOption {
   duration: string;
   price: number;
   estimated: string;
+  description: string;
+  cutOffTime?: string;
+  processingTime?: string;
 }
 
 interface PaymentMethod {
@@ -69,18 +77,44 @@ export default function CheckoutPage() {
   const [selectedPayment, setSelectedPayment] = useState('card');
   const [selectedDelivery, setSelectedDelivery] = useState('standard');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [orderError, setOrderError] = useState<string | null>(null);
 
   const subtotal = getCartTotal();
   
   const deliveryOptions: DeliveryOption[] = [
-    { id: 'express', name: 'Express Delivery', duration: '2-3 Days', price: 9.99, estimated: 'Arrives in 2-3 business days' },
-    { id: 'standard', name: 'Standard Delivery', duration: '3-5 Days', price: 4.99, estimated: 'Arrives in 3-5 business days' },
-    { id: 'economy', name: 'Economy Delivery', duration: '5-7 Days', price: 2.99, estimated: 'Arrives in 5-7 business days' },
-    { id: 'super-saver', name: 'Super Saver', duration: '7-10 Days', price: 0, estimated: 'Arrives in 7-10 business days' },
+    { 
+      id: 'express', 
+      name: 'Express Delivery', 
+      duration: '1-2 Days', 
+      price: 6.99, 
+      estimated: 'Arrives in 1-2 working days',
+      description: 'Fastest delivery option. Order before 2:00 PM for next-day dispatch.',
+      cutOffTime: '2:00 PM',
+      processingTime: 'Same day processing (Mon-Fri)'
+    },
+    { 
+      id: 'standard', 
+      name: 'Standard Delivery', 
+      duration: '2-5 Days', 
+      price: 3.99, 
+      estimated: 'Arrives in 2-5 working days',
+      description: 'Reliable standard delivery service.',
+      processingTime: '1-2 business days processing'
+    },
+    { 
+      id: 'free', 
+      name: 'Free Delivery', 
+      duration: '3-6 Days', 
+      price: 0, 
+      estimated: 'Arrives in 3-6 working days',
+      description: 'Free delivery on orders over £50.',
+      processingTime: '2-3 business days processing'
+    },
   ];
 
   const selectedDeliveryOption = deliveryOptions.find(opt => opt.id === selectedDelivery);
-  const shipping = selectedDeliveryOption?.price || 0;
+  const shipping = (subtotal >= 50 && selectedDelivery === 'standard') ? 0 : 
+                   selectedDeliveryOption?.price || 0;
   const tax = subtotal * 0.2;
   const total = subtotal + shipping + tax;
 
@@ -112,10 +146,80 @@ export default function CheckoutPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsProcessing(true);
-    
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    clearCart();
-    window.location.href = '/order-success';
+    setOrderError(null);
+
+    try {
+      // Prepare order data
+      const orderData = {
+        firstName: billingDetails.firstName,
+        lastName: billingDetails.lastName,
+        email: billingDetails.email,
+        phone: billingDetails.phone,
+        address: billingDetails.address,
+        apartment: billingDetails.apartment,
+        city: billingDetails.city,
+        postcode: billingDetails.postcode,
+        country: billingDetails.country,
+        deliveryMethod: selectedDelivery,
+        deliveryPrice: shipping,
+        deliveryEstimated: selectedDeliveryOption?.estimated || '',
+        subtotal: subtotal,
+        tax: tax,
+        total: total,
+        paymentMethod: selectedPayment,
+        notes: '',
+        items: cartItems.map(item => ({
+          productId: item.productId,
+          variantId: item.variantId || null,
+          name: item.name,
+          sku: item.sku || '',
+          variantName: item.variantName || '',
+          quantity: item.quantity,
+          price: item.price,
+          originalPrice: item.originalPrice || null,
+          total: item.price * item.quantity,
+          image: item.image || null
+        }))
+      };
+
+      // Use the full URL to the backend API - NO AUTHENTICATION REQUIRED
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      
+      const response = await fetch(`${API_URL}/api/orders`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+          // ✅ No Authorization header - allows guest checkout
+        },
+        body: JSON.stringify(orderData)
+      });
+
+      // Check if response is OK before parsing JSON
+      if (!response.ok) {
+        const text = await response.text();
+        try {
+          const errorData = JSON.parse(text);
+          throw new Error(errorData.error || 'Failed to place order');
+        } catch {
+          throw new Error(`Server error: ${response.status} ${response.statusText}`);
+        }
+      }
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Clear cart and redirect to success page
+        clearCart();
+        window.location.href = `/order-success?order=${result.order.order_number}`;
+      } else {
+        throw new Error(result.error || 'Failed to place order');
+      }
+    } catch (error) {
+      console.error('Order submission error:', error);
+      setOrderError(error instanceof Error ? error.message : 'Failed to place order. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   if (cartItems.length === 0) {
@@ -127,7 +231,7 @@ export default function CheckoutPage() {
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Your cart is empty</h2>
           <p className="text-gray-600 mb-6">Add some items to your cart before checking out</p>
-          <Link href="/products" className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all">
+          <Link href="/" className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all">
             <FaArrowLeft className="w-4 h-4" />
             Continue Shopping
           </Link>
@@ -344,9 +448,10 @@ export default function CheckoutPage() {
                           className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition bg-white text-gray-900 appearance-none cursor-pointer"
                         >
                           <option>United Kingdom</option>
-                          <option>United States</option>
-                          <option>Canada</option>
-                          <option>Australia</option>
+                          <option>England</option>
+                          <option>Scotland</option>
+                          <option>Wales</option>
+                          <option>Northern Ireland</option>
                         </select>
                       </div>
                     </div>
@@ -382,56 +487,116 @@ export default function CheckoutPage() {
                 <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">
                   <h2 className="text-xl font-bold text-gray-900 mb-6">Delivery Options</h2>
                   
-                  <div className="space-y-4">
-                    {deliveryOptions.map((option) => (
-                      <label
-                        key={option.id}
-                        className={`flex items-center justify-between p-5 border-2 rounded-xl cursor-pointer transition-all ${
-                          selectedDelivery === option.id
-                            ? 'border-blue-500 bg-blue-50 shadow-md'
-                            : 'border-gray-200 hover:border-blue-300 hover:shadow-sm bg-white'
-                        }`}
-                      >
-                        <div className="flex items-center gap-4 flex-1">
-                          <input
-                            type="radio"
-                            name="delivery"
-                            value={option.id}
-                            checked={selectedDelivery === option.id}
-                            onChange={(e) => setSelectedDelivery(e.target.value)}
-                            className="w-4 h-4 text-blue-600"
-                          />
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <FaTruck className={`w-5 h-5 ${selectedDelivery === option.id ? 'text-blue-600' : 'text-gray-500'}`} />
-                              <span className={`font-semibold ${selectedDelivery === option.id ? 'text-gray-900' : 'text-gray-800'}`}>
-                                {option.name}
-                              </span>
-                              <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 font-medium rounded-full">{option.duration}</span>
-                            </div>
-                            <p className="text-xs text-gray-500">{option.estimated}</p>
-                          </div>
-                          <div className="text-right">
-                            {option.price === 0 ? (
-                              <span className="text-green-600 font-bold text-base">FREE</span>
-                            ) : (
-                              <span className="font-bold text-gray-900 text-base">£{formatPrice(option.price)}</span>
-                            )}
-                          </div>
-                        </div>
-                      </label>
-                    ))}
+                  {/* Delivery Info Banner */}
+                  <div className="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
+                    <div className="flex items-start gap-3">
+                      <FaShippingFast className="w-5 h-5 text-blue-600 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-semibold text-blue-800">Delivery Information</p>
+                        <ul className="text-xs text-blue-700 mt-1 space-y-1">
+                          <li>• Orders are processed Monday–Friday</li>
+                          <li>• Orders placed after 2:00 PM processed next working day</li>
+                          <li>• Free UK delivery on orders over £50</li>
+                          <li>• Track your parcel with our courier service</li>
+                        </ul>
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="mt-6 p-4 bg-amber-50 rounded-xl border border-amber-200">
+                  <div className="space-y-4">
+                    {deliveryOptions.map((option) => {
+                      const isFree = option.id === 'free';
+                      const isEligibleForFree = subtotal >= 50 && option.id === 'standard';
+                      const displayPrice = isEligibleForFree ? 0 : option.price;
+                      const showFreeBadge = isEligibleForFree || isFree;
+                      
+                      return (
+                        <label
+                          key={option.id}
+                          className={`flex items-center justify-between p-5 border-2 rounded-xl cursor-pointer transition-all ${
+                            selectedDelivery === option.id
+                              ? 'border-blue-500 bg-blue-50 shadow-md'
+                              : 'border-gray-200 hover:border-blue-300 hover:shadow-sm bg-white'
+                          } ${isEligibleForFree && option.id === 'standard' ? 'border-green-300 bg-green-50' : ''}`}
+                        >
+                          <div className="flex items-center gap-4 flex-1">
+                            <input
+                              type="radio"
+                              name="delivery"
+                              value={option.id}
+                              checked={selectedDelivery === option.id}
+                              onChange={(e) => setSelectedDelivery(e.target.value)}
+                              className="w-4 h-4 text-blue-600"
+                            />
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                <FaTruck className={`w-5 h-5 ${selectedDelivery === option.id ? 'text-blue-600' : 'text-gray-500'}`} />
+                                <span className={`font-semibold ${selectedDelivery === option.id ? 'text-gray-900' : 'text-gray-800'}`}>
+                                  {option.name}
+                                </span>
+                                <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 font-medium rounded-full">
+                                  {option.duration}
+                                </span>
+                                {showFreeBadge && (
+                                  <span className="text-xs px-2 py-0.5 bg-green-500 text-white font-medium rounded-full animate-pulse">
+                                    FREE
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-gray-500">{option.description}</p>
+                              {option.cutOffTime && (
+                                <p className="text-xs text-gray-400 mt-1">
+                                  <span className="font-medium">Cut-off:</span> {option.cutOffTime}
+                                </p>
+                              )}
+                            </div>
+                            <div className="text-right">
+                              {displayPrice === 0 ? (
+                                <span className="text-green-600 font-bold text-base">FREE</span>
+                              ) : (
+                                <span className="font-bold text-gray-900 text-base">£{formatPrice(displayPrice)}</span>
+                              )}
+                            </div>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+
+                  {/* Delivery Locations */}
+                  <div className="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                    <div className="flex items-start gap-3">
+                      <FaMapMarkedAlt className="w-5 h-5 text-gray-600 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-semibold text-gray-800">Delivery Locations</p>
+                        <p className="text-xs text-gray-600 mt-1">We deliver throughout:</p>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          <span className="text-xs px-3 py-1 bg-white rounded-full border border-gray-200">England</span>
+                          <span className="text-xs px-3 py-1 bg-white rounded-full border border-gray-200">Scotland</span>
+                          <span className="text-xs px-3 py-1 bg-white rounded-full border border-gray-200">Wales</span>
+                          <span className="text-xs px-3 py-1 bg-white rounded-full border border-gray-200">Northern Ireland</span>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-2">
+                          <FaExclamationTriangle className="inline w-3 h-3 mr-1 text-amber-500" />
+                          Highlands, Islands, Isle of Man, and Channel Islands may require extra delivery time or charges.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Order Processing Info */}
+                  <div className="mt-4 p-4 bg-amber-50 rounded-xl border border-amber-200">
                     <div className="flex items-start gap-3">
                       <FaClock className="w-5 h-5 text-amber-600 mt-0.5" />
                       <div>
-                        <p className="text-sm font-semibold text-amber-800">Estimated Delivery Date</p>
-                        <p className="text-sm text-amber-700 mt-1">
-                          {selectedDeliveryOption?.estimated}
-                        </p>
-                        <p className="text-xs text-amber-600 mt-1">Free shipping on orders over £50</p>
+                        <p className="text-sm font-semibold text-amber-800">Order Processing</p>
+                        <ul className="text-xs text-amber-700 mt-1 space-y-1">
+                          <li>• Orders processed Monday–Friday</li>
+                          <li>• Orders after 2:00 PM processed next working day</li>
+                          <li>• Weekend/Bank holiday orders processed next working day</li>
+                          <li>• You'll receive confirmation via email/WhatsApp once dispatched</li>
+                          <li>• Tracking information provided for all eligible deliveries</li>
+                        </ul>
                       </div>
                     </div>
                   </div>
@@ -525,6 +690,28 @@ export default function CheckoutPage() {
                     </div>
                   )}
 
+                  {/* Order Error */}
+                  {orderError && (
+                    <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-xl">
+                      <p className="text-sm text-red-600">{orderError}</p>
+                    </div>
+                  )}
+
+                  {/* Delivery Disclaimer */}
+                  <div className="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                    <div className="flex items-start gap-3">
+                      <FaInfoCircle className="w-5 h-5 text-gray-500 mt-0.5" />
+                      <div>
+                        <p className="text-xs font-medium text-gray-700">Delivery Disclaimer</p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Delivery times are estimates and may be affected by weather, courier delays, 
+                          or peak periods such as Christmas and Black Friday. We are not responsible for 
+                          delays caused by the courier once the parcel has been dispatched.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="flex gap-4 mt-8">
                     <button
                       type="button"
@@ -540,7 +727,7 @@ export default function CheckoutPage() {
                     >
                       {isProcessing ? (
                         <div className="flex items-center justify-center gap-2">
-                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          <FaSpinner className="w-5 h-5 animate-spin" />
                           Processing...
                         </div>
                       ) : (
@@ -565,7 +752,7 @@ export default function CheckoutPage() {
               <div className="space-y-4 max-h-96 overflow-y-auto mb-6 pr-2">
                 {cartItems.map((item) => (
                   <div key={item.id} className="flex gap-4 pb-4 border-b border-gray-100">
-                    <div className="relative w-40 h-40 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl overflow-hidden flex-shrink-0 shadow-inner">
+                    <div className="relative w-20 h-20 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl overflow-hidden flex-shrink-0 shadow-inner">
                       {item.image ? (
                         <Image
                           src={item.image}

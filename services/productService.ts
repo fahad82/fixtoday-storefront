@@ -1,11 +1,11 @@
-// services/productService.ts (updated with number parsing)
+// services/productService.ts
 import { Product, ProductsResponse, ProductFilters } from '@/types/product.types';
 
 class ProductService {
   private baseURL: string;
 
   constructor() {
-    this.baseURL = process.env.NEXT_PUBLIC_API_URL || 'https://api.fixtoday.co.uk';
+    this.baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
   }
 
   private parseProductNumbers(product: any): Product {
@@ -22,6 +22,7 @@ class ProductService {
   async getProducts(filters: ProductFilters = {}): Promise<ProductsResponse> {
     const {
       brand_id,
+      category,
       search,
       min_price,
       max_price,
@@ -31,7 +32,22 @@ class ProductService {
       limit = 12,
       sortBy = 'created_at',
       sortOrder = 'DESC',
-      collection_id
+      collection_id,
+      // Advanced filters
+      storage,
+      ram,
+      colors,
+      screen_size,
+      processor,
+      battery,
+      camera,
+      network,
+      os,
+      refresh_rate,
+      charging,
+      water_resistance,
+      in_stock,
+      rating
     } = filters;
 
     const params = new URLSearchParams({
@@ -45,11 +61,27 @@ class ProductService {
       ...(min_price && { min_price: min_price.toString() }),
       ...(max_price && { max_price: max_price.toString() }),
       ...(brand_id && { brand_id }),
-      ...(collection_id && { collection_id })
+      ...(category && { category_id: category }),
+      ...(collection_id && { collection_id }),
+      // Advanced filters
+      ...(storage && { storage }),
+      ...(ram && { ram }),
+      ...(colors && { colors }),
+      ...(screen_size && { screen_size }),
+      ...(processor && { processor }),
+      ...(battery && { battery }),
+      ...(camera && { camera }),
+      ...(network && { network }),
+      ...(os && { os }),
+      ...(refresh_rate && { refresh_rate }),
+      ...(charging && { charging }),
+      ...(water_resistance && { water_resistance }),
+      ...(in_stock !== undefined && { in_stock: in_stock.toString() }),
+      ...(rating && { rating: rating.toString() })
     });
 
     try {
-      const response = await fetch(`${this.baseURL}/api/products?${params}`);
+      const response = await fetch(`${this.baseURL}/api/products/filter?${params}`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -67,6 +99,34 @@ class ProductService {
       throw new Error(data.error || 'Failed to fetch products');
     } catch (error) {
       console.error('Error fetching products:', error);
+      // Fallback to regular products endpoint
+      try {
+        const fallbackParams = new URLSearchParams({
+          page: page.toString(),
+          limit: limit.toString(),
+          sortBy,
+          sortOrder,
+          ...(status && { status }),
+          ...(search && { search }),
+          ...(min_price && { min_price: min_price.toString() }),
+          ...(max_price && { max_price: max_price.toString() }),
+          ...(brand_id && { brand_id }),
+        });
+        
+        const fallbackResponse = await fetch(`${this.baseURL}/api/products?${fallbackParams}`);
+        const fallbackData = await fallbackResponse.json();
+        
+        if (fallbackData.success) {
+          return {
+            success: true,
+            products: fallbackData.products.map((product: any) => this.parseProductNumbers(product)),
+            pagination: fallbackData.pagination
+          };
+        }
+      } catch (fallbackError) {
+        console.error('Fallback fetch failed:', fallbackError);
+      }
+      
       throw error;
     }
   }
