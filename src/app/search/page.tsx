@@ -12,6 +12,8 @@ import { WishlistProvider } from '../../context/WishlistContext';
 import Loader from '../../components/common/Loader';
 import { FaSearch } from 'react-icons/fa';
 
+
+// search page component
 function SearchContent() {
   const searchParams = useSearchParams();
   const query = searchParams?.get('q') || '';
@@ -47,6 +49,8 @@ function SearchContent() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+
+      //navbar component
       <Navbar />
 
       <main className="container mx-auto px-4 pt-[140px] pb-12">
