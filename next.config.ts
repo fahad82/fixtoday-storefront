@@ -1,68 +1,33 @@
 // next.config.ts
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  images: {
+import type { NextConfig } from 'next';
 
-     domains: [
-      'images.unsplash.com',
-      'ik.imagekit.io',
-      'localhost',
-      'api.fixtoday.co.uk',
-      'cdn.jsdelivr.net',
-      'upload.wikimedia.org'
-    ],
-    // Remove deprecated domains array
+const nextConfig: NextConfig = {
+  images: {
+    loader: 'custom',
+    loaderFile: './src/lib/imageLoader.ts',
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'images.unsplash.com',
-        port: '',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'ik.imagekit.io',
-        port: '',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'cdn.jsdelivr.net',
-        port: '',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'upload.wikimedia.org',
-        port: '',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'res.cloudinary.com',
-        port: '',
-        pathname: '/**',
+        hostname: '**',
       },
       {
         protocol: 'http',
-        hostname: 'localhost',
-        port: '3001',
-        pathname: '/**',
+        hostname: '**',
       },
     ],
-    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
-    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 60,
   },
-  // Enable React strict mode for better development
-  reactStrictMode: true,
-  // Enable SWC minification for faster builds
-  swcMinify: true,
-  // Compress responses
-  compress: true,
-  // Add trailing slash for consistent routing
-  trailingSlash: false,
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: process.env.NODE_ENV === 'production'
+          ? 'https://api.fixtoday.co.uk/api/:path*'
+          : 'http://localhost:3000/api/:path*',
+      },
+    ];
+  },
 };
 
-module.exports = nextConfig;
+export default nextConfig;
