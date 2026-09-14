@@ -83,13 +83,13 @@ export const ProductCard = memo(({
     }
   };
 
-  const formatPrice = (price: number): string => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-    }).format(price);
-  };
+const formatPrice = (price: number): string => {
+  return new Intl.NumberFormat('en-GB', {
+    style: 'currency',
+    currency: 'GBP',
+    minimumFractionDigits: 2,
+  }).format(price);
+};
 
   const renderStars = (rating: number): React.ReactNode => {
     const fullStars = Math.floor(rating);

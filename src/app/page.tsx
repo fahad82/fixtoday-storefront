@@ -4,13 +4,15 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import Head from 'next/head';
 import Navbar from '../components/common/Navbar';
+import Footer from '../components/common/Footer';
+import FAQSection from '../components/home/FAQSection';
 import ProductGrid from '../components/products/ProductGrid';
 import ProductFilters from '../components/products/ProductFilters';
 import CartDrawer from '../components/cart/CartDrawer';
 import { useProducts } from '../hooks/useProducts';
 import { useCategories } from '../hooks/useCategories';
 import { useFilters } from '../hooks/useFilters';
-import { FaFilter, FaThList, FaThLarge, FaTimes, FaArrowRight } from 'react-icons/fa';
+import { FaFilter, FaThList, FaThLarge, FaTimes } from 'react-icons/fa';
 
 interface FiltersState {
   [key: string]: any;
@@ -78,8 +80,8 @@ export default function HomePage() {
               <button
                 onClick={() => setIsFilterOpen(!isFilterOpen)}
                 className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl font-medium transition-all ${
-                  isFilterOpen 
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' 
+                  isFilterOpen
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-200'
                     : 'bg-white text-gray-700 border border-gray-200 hover:border-blue-300 hover:shadow-md'
                 }`}
               >
@@ -166,7 +168,13 @@ export default function HomePage() {
           </div>
         </main>
 
-        <CartDrawer />
+           <CartDrawer />
+
+        {/* FAQ Section */}
+        <FAQSection />
+
+     
+        <Footer />
       </div>
     </>
   );

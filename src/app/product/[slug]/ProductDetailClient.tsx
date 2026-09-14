@@ -225,13 +225,13 @@ export default function ProductDetailClient({
     { icon: FaShieldAlt, label: '2-Year Warranty', desc: 'Full coverage' },
   ];
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-    }).format(price);
-  };
+const formatPrice = (price: number) => {
+  return new Intl.NumberFormat('en-GB', {
+    style: 'currency',
+    currency: 'GBP',
+    minimumFractionDigits: 2,
+  }).format(price);
+};
 
   return (
     <>

@@ -5,7 +5,7 @@ import './globals.css';
 import { Providers } from './providers';
 import { Toaster } from 'react-hot-toast';
 
-const inter = Inter({ 
+const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter',
 });
