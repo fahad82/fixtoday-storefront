@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCart } from '../../hooks/useCart';
 import { useWishlist } from '../../hooks/useWishlist';
-import { FaSearch, FaShoppingCart, FaHeart, FaBars, FaUser, FaStore } from 'react-icons/fa';
+import { FaSearch, FaShoppingCart, FaHeart, FaBars, FaUser, FaStore, FaTools } from 'react-icons/fa';
 import { IoClose } from 'react-icons/io5';
 import CategoryScroll from './CategoryScroll';
 
@@ -101,6 +101,15 @@ export const Navbar: React.FC<NavbarProps> = ({ onCategorySelect }) => {
               >
                 <FaSearch className="text-gray-600" />
               </button>
+
+              {/* Repairs - Desktop */}
+              <Link
+                href="/repairs/track"
+                className="hidden lg:flex items-center space-x-2 px-3 py-2 hover:bg-gray-100 rounded-full transition-colors group"
+              >
+                <FaTools className="text-gray-600 group-hover:text-blue-600 transition-colors" />
+                <span className="text-sm font-medium text-gray-700 group-hover:text-blue-600 transition-colors">Repairs</span>
+              </Link>
 
               {/* User Account - Desktop */}
               <Link
@@ -229,6 +238,24 @@ export const Navbar: React.FC<NavbarProps> = ({ onCategorySelect }) => {
           >
             <FaUser className="text-gray-600" />
             <span className="font-medium">My Account</span>
+          </Link>
+
+          <Link
+            href="/repairs/book"
+            className="flex items-center space-x-3 p-3 hover:bg-gray-50 rounded-xl transition-colors"
+            onClick={() => setIsMobileMenuOpen(false)}
+          >
+            <FaTools className="text-gray-600" />
+            <span className="font-medium">Book a Repair</span>
+          </Link>
+
+          <Link
+            href="/repairs/track"
+            className="flex items-center space-x-3 p-3 hover:bg-gray-50 rounded-xl transition-colors"
+            onClick={() => setIsMobileMenuOpen(false)}
+          >
+            <FaTools className="text-gray-600" />
+            <span className="font-medium">Track a Repair</span>
           </Link>
           
           <Link 
