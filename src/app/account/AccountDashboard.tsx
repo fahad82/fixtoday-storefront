@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FaBoxOpen, FaChevronDown, FaChevronUp, FaSignOutAlt, FaTools, FaUserCog } from 'react-icons/fa';
+import { FaBoxOpen, FaChevronDown, FaChevronUp, FaExchangeAlt, FaSignOutAlt, FaTools, FaUserCog } from 'react-icons/fa';
+import { TradeIn, pounds } from '@/services/tradeInService';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/context/AuthContext';
 import OrderSummaryCard from '@/components/orders/OrderSummaryCard';
@@ -12,10 +13,11 @@ import { CustomerOrder, ORDER_STATUS_LABELS, PAYMENT_LABELS } from '@/services/o
 import { formatDate, formatMoney } from '@/services/repairService';
 import { inputClass } from './AuthCard';
 
-type Tab = 'orders' | 'repairs' | 'profile';
+type Tab = 'orders' | 'repairs' | 'trade-ins' | 'profile';
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: 'orders', label: 'Orders', icon: <FaBoxOpen /> },
   { id: 'repairs', label: 'Repairs', icon: <FaTools /> },
+  { id: 'trade-ins', label: 'Trade-ins', icon: <FaExchangeAlt /> },
   { id: 'profile', label: 'Profile', icon: <FaUserCog /> },
 ];
 
@@ -63,6 +65,7 @@ export default function AccountDashboard() {
 
       {tab === 'orders' && <OrdersTab />}
       {tab === 'repairs' && <RepairsTab />}
+      {tab === 'trade-ins' && <TradeInsTab />}
       {tab === 'profile' && <ProfileTab />}
     </div>
   );
@@ -195,6 +198,41 @@ function RepairsTab() {
         <input className={`${inputClass} font-mono uppercase`} placeholder="FT-R-2611-0001" value={form.number} onChange={(e) => setForm((f) => ({ ...f, number: e.target.value }))} required minLength={6} />
         <input className={`${inputClass} font-mono uppercase`} placeholder="Tracking code" value={form.code} onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))} required minLength={8} />
       </AddForm>
+    </div>
+  );
+}
+
+function TradeInsTab() {
+  const [items, setItems] = useState<TradeIn[] | null>(null);
+
+  useEffect(() => {
+    accountService.tradeIns().then(setItems).catch(() => setItems([]));
+  }, []);
+
+  if (!items) return <p className="text-gray-500">Loading your trade-ins…</p>;
+  if (items.length === 0) {
+    return <Empty text="No trade-ins yet." action={<Link href="/trade-in" className="text-blue-600 font-semibold">Get a price for your old device</Link>} />;
+  }
+  return (
+    <div className="space-y-4">
+      {items.map((t) => (
+        <div key={t.trade_in_number} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p className="font-mono font-bold text-gray-900">{t.trade_in_number}</p>
+            <p className="text-sm text-gray-700">{t.device.brand} {t.device.model} {t.device.storage}</p>
+            <p className="text-sm text-gray-500">{t.status_label} · {pounds(t.offered_pence ?? t.quoted_pence)}</p>
+          </div>
+          <div className="flex items-center gap-3">
+            {t.can_respond && <span className="text-xs font-semibold px-2 py-1 rounded-full bg-amber-100 text-amber-800">New offer waiting</span>}
+            <Link
+              href={`/trade-in/track?id=${encodeURIComponent(t.trade_in_number)}&code=${encodeURIComponent(t.tracking_code || '')}`}
+              className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700"
+            >
+              View details
+            </Link>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

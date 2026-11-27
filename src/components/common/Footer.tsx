@@ -73,7 +73,8 @@ const servicesLinks: FooterLink[] = [
   { label: 'Screen Replacement', href: '/repairs/screen' },
   { label: 'Battery Replacement', href: '/repairs/battery' },
   { label: 'Data Recovery', href: '/repairs/data-recovery' },
-  { label: 'Trade-In', href: '/trade-in' },
+  { label: 'Sell Your Device', href: '/trade-in', badge: 'New', isNew: true },
+  { label: 'Track a Trade-In', href: '/trade-in/track' },
 ];
 
 const helpLinks: FooterLink[] = [
