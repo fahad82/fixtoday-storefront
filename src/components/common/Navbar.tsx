@@ -3,6 +3,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
+import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useCart } from '../../hooks/useCart';
 import { useWishlist } from '../../hooks/useWishlist';
@@ -18,6 +19,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onCategorySelect }) => {
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
+  const { user } = useAuth();
+  const accountLabel = user ? user.name.trim().split(/\s+/)[0] : 'Sign in';
   
   // Safe hooks with error handling
   let totalItems = 0;
@@ -117,7 +120,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onCategorySelect }) => {
                 className="hidden lg:flex items-center space-x-2 px-3 py-2 hover:bg-gray-100 rounded-full transition-colors group"
               >
                 <FaUser className="text-gray-600 group-hover:text-blue-600 transition-colors" />
-                <span className="text-sm font-medium text-gray-700 group-hover:text-blue-600 transition-colors">Account</span>
+                <span className="text-sm font-medium text-gray-700 group-hover:text-blue-600 transition-colors">{accountLabel}</span>
               </Link>
 
               {/* Wishlist */}
@@ -237,7 +240,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onCategorySelect }) => {
             onClick={() => setIsMobileMenuOpen(false)}
           >
             <FaUser className="text-gray-600" />
-            <span className="font-medium">My Account</span>
+            <span className="font-medium">{user ? 'My Account' : 'Sign in'}</span>
           </Link>
 
           <Link
