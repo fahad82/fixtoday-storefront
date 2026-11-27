@@ -5,6 +5,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useCart } from '@/hooks/useCart';
+import { useAuth } from '@/context/AuthContext';
 import { 
   FaArrowLeft, 
   FaPaypal, 
@@ -44,6 +45,7 @@ interface BillingDetails {
 
 export default function CheckoutPage() {
   const { cartItems, getTotalPrice, isReady } = useCart();
+  const { user } = useAuth();
   const [step, setStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
   const [billingDetails, setBillingDetails] = useState<BillingDetails>({
@@ -220,7 +222,34 @@ export default function CheckoutPage() {
               {/* Step 1: Billing Information */}
               {step === 1 && (
                 <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">
-                  <h2 className="text-xl font-bold text-gray-900 mb-6">Billing Information</h2>
+                  <h2 className="text-xl font-bold text-gray-900 mb-4">Billing Information</h2>
+                  {user ? (
+                    <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-blue-50 border border-blue-100 p-3 text-sm">
+                      <span className="text-gray-700">Signed in as <strong>{user.email}</strong>. This order will appear in your account.</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const [first, ...rest] = user.name.trim().split(/\s+/);
+                          setBillingDetails((d) => ({
+                            ...d,
+                            firstName: d.firstName || first || '',
+                            lastName: d.lastName || rest.join(' '),
+                            email: user.email,
+                            phone: d.phone || user.phone || '',
+                          }));
+                        }}
+                        className="font-semibold text-blue-600 hover:underline"
+                      >
+                        Use my details
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="mb-6 text-sm text-gray-600">
+                      Have an account?{' '}
+                      <Link href="/account/login?next=/checkout" className="font-semibold text-blue-600 hover:underline">Sign in</Link>{' '}
+                      to keep this order with your others.
+                    </p>
+                  )}
                   
                   <div className="grid md:grid-cols-2 gap-4">
                     <div>
