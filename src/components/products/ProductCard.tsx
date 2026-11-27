@@ -9,6 +9,7 @@ import { motion } from 'framer-motion';
 import { useCart } from '../../hooks/useCart';
 import { useWishlist } from '../../hooks/useWishlist';
 import { Product } from '../../types';
+import { ConditionBadge } from './ConditionBadge';
 import { 
   FaHeart, FaRegHeart, FaStar, FaStarHalfAlt, 
   FaShoppingCart, FaBolt, FaCheckCircle,
@@ -244,7 +245,8 @@ const formatPrice = (price: number): string => {
         />
 
         {/* Badges */}
-        <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10">
+        <div className="absolute top-3 left-3 flex flex-col items-start gap-1.5 z-10">
+          <ConditionBadge product={product} />
           {hasSale && discount > 0 && (
             <motion.div
               initial={{ x: -20, opacity: 0 }}

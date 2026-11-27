@@ -24,6 +24,7 @@ import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/free-mode';
 import 'swiper/css/thumbs';
+import { ConditionDetails } from '@/components/products/ConditionBadge';
 
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&h=800&fit=crop';
 
@@ -463,6 +464,8 @@ const formatPrice = (price: number) => {
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900 leading-tight">
               {initialProduct.name}
             </h1>
+
+            <ConditionDetails product={initialProduct} />
 
             {/* Short Description */}
             {initialProduct.short_description && (

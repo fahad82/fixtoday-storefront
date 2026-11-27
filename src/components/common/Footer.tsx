@@ -55,6 +55,7 @@ interface FooterSection {
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
 const shopLinks: FooterLink[] = [
+  { label: 'Refurbished & Used', href: '/refurbished', badge: 'New', isNew: true },
   { label: 'Laptops', href: '/laptops' },
   { label: 'Phones', href: '/phones' },
   { label: 'iPads & Tablets', href: '/tablets' },
