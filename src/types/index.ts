@@ -1,5 +1,7 @@
 // types/index.ts
 
+export type ProductCondition = 'new' | 'refurbished' | 'used';
+
 export interface Product {
   id: string;
   name: string;
@@ -26,6 +28,10 @@ export interface Product {
   specifications: Specification[];
   seo: SeoData;
   status: 'draft' | 'active' | 'inactive' | 'out_of_stock';
+  condition?: ProductCondition;
+  condition_grade?: 'pristine' | 'excellent' | 'very_good' | 'good' | null;
+  battery_health?: number | null;
+  warranty_months?: number | null;
   featured: boolean;
   sort_order: number;
   weight: number | null;
@@ -214,6 +220,8 @@ export interface ProductFilters {
   sortOrder?: 'ASC' | 'DESC';
   dateFrom?: string;
   dateTo?: string;
+  /** One condition, or a comma list such as 'refurbished,used'. */
+  condition?: string;
   // Advanced filters
   storage?: string;
   ram?: string;

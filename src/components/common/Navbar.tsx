@@ -7,7 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useCart } from '../../hooks/useCart';
 import { useWishlist } from '../../hooks/useWishlist';
-import { FaSearch, FaShoppingCart, FaHeart, FaBars, FaUser, FaStore, FaTools, FaShippingFast } from 'react-icons/fa';
+import { FaSearch, FaShoppingCart, FaHeart, FaBars, FaUser, FaStore, FaTools, FaShippingFast, FaRecycle } from 'react-icons/fa';
 import { IoClose } from 'react-icons/io5';
 import CategoryScroll from './CategoryScroll';
 
@@ -104,6 +104,15 @@ export const Navbar: React.FC<NavbarProps> = ({ onCategorySelect }) => {
               >
                 <FaSearch className="text-gray-600" />
               </button>
+
+              {/* Refurbished - Desktop */}
+              <Link
+                href="/refurbished"
+                className="hidden lg:flex items-center space-x-2 px-3 py-2 hover:bg-gray-100 rounded-full transition-colors group"
+              >
+                <FaRecycle className="text-gray-600 group-hover:text-emerald-600 transition-colors" />
+                <span className="text-sm font-medium text-gray-700 group-hover:text-emerald-600 transition-colors">Refurbished</span>
+              </Link>
 
               {/* Repairs - Desktop */}
               <Link
@@ -259,6 +268,15 @@ export const Navbar: React.FC<NavbarProps> = ({ onCategorySelect }) => {
           >
             <FaTools className="text-gray-600" />
             <span className="font-medium">Track a Repair</span>
+          </Link>
+
+          <Link
+            href="/refurbished"
+            className="flex items-center space-x-3 p-3 hover:bg-gray-50 rounded-xl transition-colors"
+            onClick={() => setIsMobileMenuOpen(false)}
+          >
+            <FaRecycle className="text-gray-600" />
+            <span className="font-medium">Refurbished &amp; Used</span>
           </Link>
 
           <Link
