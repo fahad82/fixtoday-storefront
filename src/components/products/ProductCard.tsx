@@ -132,7 +132,7 @@ const formatPrice = (price: number): string => {
               className="object-cover group-hover:scale-105 transition-transform duration-300"
               sizes="64px"
               onError={() => setImageError(true)}
-              unoptimized={imageUrl.startsWith('http')}
+              unoptimized={imageUrl.startsWith('data:')}
             />
           </div>
           <div className="flex-1 min-w-0">
@@ -177,7 +177,7 @@ const formatPrice = (price: number): string => {
             className="object-cover transition-transform duration-700 group-hover:scale-105"
             sizes="(max-width: 768px) 100vw, 50vw"
             onError={() => setImageError(true)}
-            unoptimized={imageUrl.startsWith('http')}
+            unoptimized={imageUrl.startsWith('data:')}
             priority={priority}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
@@ -233,7 +233,7 @@ const formatPrice = (price: number): string => {
           }`}
           sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
           onError={() => setImageError(true)}
-          unoptimized={imageUrl.startsWith('http')}
+          unoptimized={imageUrl.startsWith('data:')}
           priority={priority}
         />
         

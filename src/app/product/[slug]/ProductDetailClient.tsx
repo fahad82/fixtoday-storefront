@@ -252,7 +252,7 @@ const formatPrice = (price: number) => {
                     alt={initialProduct.name}
                     fill
                     className="object-cover"
-                    unoptimized={activeImage.startsWith('http')}
+                    unoptimized={activeImage.startsWith('data:')}
                   />
                 </div>
                 <div>
@@ -336,7 +336,7 @@ const formatPrice = (price: number) => {
                 priority
                 className={`object-contain transition-opacity duration-300 ${isZoomed ? 'opacity-0' : 'opacity-100'}`}
                 sizes="(max-width: 1024px) 100vw, 50vw"
-                unoptimized={activeImage.startsWith('http')}
+                unoptimized={activeImage.startsWith('data:')}
               />
               {isZoomed && (
                 <div
@@ -419,7 +419,7 @@ const formatPrice = (price: number) => {
                           fill
                           className="object-cover"
                           sizes="80px"
-                          unoptimized={imgUrl.startsWith('http')}
+                          unoptimized={imgUrl.startsWith('data:')}
                         />
                       </button>
                     </SwiperSlide>
