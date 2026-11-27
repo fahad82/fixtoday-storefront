@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCart } from '../../hooks/useCart';
 import { useWishlist } from '../../hooks/useWishlist';
-import { FaSearch, FaShoppingCart, FaHeart, FaBars, FaUser, FaStore, FaTools } from 'react-icons/fa';
+import { FaSearch, FaShoppingCart, FaHeart, FaBars, FaUser, FaStore, FaTools, FaShippingFast } from 'react-icons/fa';
 import { IoClose } from 'react-icons/io5';
 import CategoryScroll from './CategoryScroll';
 
@@ -256,6 +256,15 @@ export const Navbar: React.FC<NavbarProps> = ({ onCategorySelect }) => {
           >
             <FaTools className="text-gray-600" />
             <span className="font-medium">Track a Repair</span>
+          </Link>
+
+          <Link
+            href="/track-order"
+            className="flex items-center space-x-3 p-3 hover:bg-gray-50 rounded-xl transition-colors"
+            onClick={() => setIsMobileMenuOpen(false)}
+          >
+            <FaShippingFast className="text-gray-600" />
+            <span className="font-medium">Track an Order</span>
           </Link>
           
           <Link 

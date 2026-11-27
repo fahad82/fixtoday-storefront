@@ -66,6 +66,7 @@ const shopLinks: FooterLink[] = [
 const servicesLinks: FooterLink[] = [
   { label: 'Book a Repair', href: '/repairs/book', badge: 'New', isNew: true },
   { label: 'Track a Repair', href: '/repairs/track' },
+  { label: 'Track an Order', href: '/track-order' },
   { label: 'Phone Repairs', href: '/repairs/phone' },
   { label: 'Laptop Repairs', href: '/repairs/laptop' },
   { label: 'Screen Replacement', href: '/repairs/screen' },

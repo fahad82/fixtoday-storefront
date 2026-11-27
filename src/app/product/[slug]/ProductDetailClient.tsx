@@ -161,7 +161,6 @@ export default function ProductDetailClient({
       const itemToAdd = {
         ...initialProduct,
         ...(selectedVariant && {
-          id: selectedVariant.id,
           sku: selectedVariant.sku,
           sale_price: selectedVariant.sale_price || selectedVariant.price,
           base_price: selectedVariant.price,
@@ -169,7 +168,7 @@ export default function ProductDetailClient({
           main_image: selectedVariant.image || initialProduct.main_image,
         }),
       };
-      await addToCart(itemToAdd, quantity, selectedOptions);
+      await addToCart(itemToAdd, quantity, selectedOptions, selectedVariant ? String(selectedVariant.id) : undefined);
       toast.success(`${quantity} item(s) added to cart!`, {
         icon: '🛒',
         duration: 3000,

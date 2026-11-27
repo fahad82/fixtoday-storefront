@@ -5,8 +5,10 @@ import { CartItem, Product } from '../types';
 
 interface CartContextType {
   cartItems: CartItem[];
+  /** False until the saved basket has been read from this browser. */
+  isReady: boolean;
   isOpen: boolean;
-  addToCart: (product: Product, quantity?: number, selectedOptions?: Record<string, string>) => void;
+  addToCart: (product: Product, quantity?: number, selectedOptions?: Record<string, string>, variantId?: string) => void;
   removeFromCart: (id: string, selectedOptions?: Record<string, string>) => void;
   updateQuantity: (id: string, quantity: number, selectedOptions?: Record<string, string>) => void;
   clearCart: () => void;
@@ -34,6 +36,7 @@ interface CartProviderProps {
 export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [isReady, setIsReady] = useState<boolean>(false);
 
   useEffect(() => {
     try {
@@ -44,24 +47,29 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     } catch (error) {
       console.error('Error loading cart:', error);
     }
+    setIsReady(true);
   }, []);
 
   useEffect(() => {
+    if (!isReady) return; // don't overwrite the saved basket before it is read
     try {
       localStorage.setItem('cart', JSON.stringify(cartItems));
     } catch (error) {
       console.error('Error saving cart:', error);
     }
-  }, [cartItems]);
+  }, [cartItems, isReady]);
 
-  const addToCart = (product: Product, quantity: number = 1, selectedOptions: Record<string, string> = {}): void => {
+  // `product.id` is always the product's own id; a chosen option goes in `variantId`.
+  const addToCart = (product: Product, quantity: number = 1, selectedOptions: Record<string, string> = {}, variantId?: string): void => {
     setCartItems((prevItems) => {
       const itemKey = `${product.id}-${JSON.stringify(selectedOptions)}`;
       const existingItemIndex = prevItems.findIndex(
         (item) => `${item.id}-${JSON.stringify(item.selectedOptions)}` === itemKey
       );
 
-      const price = product.sale_price || product.base_price;
+      const sale = Number(product.sale_price) || 0;
+      const base = Number(product.base_price) || 0;
+      const price = sale > 0 && (base === 0 || sale < base) ? sale : base;
 
       if (existingItemIndex !== -1) {
         const updatedItems = [...prevItems];
@@ -79,12 +87,13 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
           name: product.name,
           slug: product.slug,
           price: price || 0,
-          originalPrice: product.base_price || 0,
+          originalPrice: base,
           image: product.main_image,
           quantity,
           selectedOptions,
           sku: product.sku,
           stock: product.stock_quantity || 0,
+          ...(variantId && { variantId }),
         },
       ];
     });
@@ -134,6 +143,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   const value = useMemo(
     () => ({
       cartItems,
+      isReady,
       isOpen,
       addToCart,
       removeFromCart,
@@ -145,7 +155,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
       closeCart,
       toggleCart,
     }),
-    [cartItems, isOpen]
+    [cartItems, isOpen, isReady]
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
