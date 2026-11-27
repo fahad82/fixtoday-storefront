@@ -3,6 +3,7 @@
 
 import React, { useState, memo } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { useCart } from '../../hooks/useCart';
@@ -47,10 +48,17 @@ export const ProductCard = memo(({
 
   const imageUrl = product.main_image && !imageError ? product.main_image : FALLBACK_IMAGE;
 
+  const router = useRouter();
+
   const handleAddToCart = async (e: React.MouseEvent): Promise<void> => {
     e.preventDefault();
     e.stopPropagation();
     if (isOutOfStock || isAddingToCart) return;
+    // Products with options (colour, storage...) need a choice on the product page.
+    if (product.has_variants) {
+      router.push(`/product/${product.slug}`);
+      return;
+    }
 
     setIsAddingToCart(true);
     try {

@@ -4,7 +4,6 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
 import { useCart } from '@/hooks/useCart';
 import { 
   FaArrowLeft, 
@@ -23,11 +22,11 @@ import {
   FaCheckCircle,
   FaClock,
   FaShieldAlt,
-  FaCreditCard,
   FaWallet
 } from 'react-icons/fa';
 import { SiVisa, SiMastercard, SiAmericanexpress } from 'react-icons/si';
 import toast from 'react-hot-toast';
+import { DELIVERY_OPTIONS, DeliveryMethod, deliveryPrice, includedVat, orderErrorMessage, orderService } from '@/services/orderService';
 
 interface BillingDetails {
   firstName: string;
@@ -42,23 +41,9 @@ interface BillingDetails {
   saveInfo: boolean;
 }
 
-interface DeliveryOption {
-  id: string;
-  name: string;
-  duration: string;
-  price: number;
-  estimated: string;
-}
-
-interface PaymentMethod {
-  id: string;
-  name: string;
-  icon: React.ReactNode;
-}
 
 export default function CheckoutPage() {
-  const router = useRouter();
-  const { cartItems, getTotalPrice, clearCart } = useCart();
+  const { cartItems, getTotalPrice, isReady } = useCart();
   const [step, setStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
   const [billingDetails, setBillingDetails] = useState<BillingDetails>({
@@ -73,39 +58,19 @@ export default function CheckoutPage() {
     country: 'United Kingdom',
     saveInfo: false,
   });
-  const [selectedPayment, setSelectedPayment] = useState('card');
-  const [selectedDelivery, setSelectedDelivery] = useState('standard');
+  const [selectedDelivery, setSelectedDelivery] = useState<DeliveryMethod>('standard');
 
   const subtotal = getTotalPrice();
   
-  const deliveryOptions: DeliveryOption[] = [
-    { id: 'express', name: 'Express Delivery', duration: '2-3 Days', price: 9.99, estimated: 'Arrives in 2-3 business days' },
-    { id: 'standard', name: 'Standard Delivery', duration: '3-5 Days', price: 4.99, estimated: 'Arrives in 3-5 business days' },
-    { id: 'economy', name: 'Economy Delivery', duration: '5-7 Days', price: 2.99, estimated: 'Arrives in 5-7 business days' },
-    { id: 'super-saver', name: 'Super Saver', duration: '7-10 Days', price: 0, estimated: 'Arrives in 7-10 business days' },
-  ];
-
-  const selectedDeliveryOption = deliveryOptions.find(opt => opt.id === selectedDelivery);
-  const shipping = selectedDeliveryOption?.price || 0;
-  const tax = subtotal * 0.2;
-  const total = subtotal + shipping + tax;
+  const deliveryOptions = DELIVERY_OPTIONS;
+  // Prices include VAT. The server works out the final amount; this is the same sum.
+  const shipping = deliveryPrice(selectedDelivery, subtotal);
+  const total = subtotal + shipping;
+  const tax = includedVat(total);
 
   const formatPrice = (price: number): string => {
     return price.toFixed(2);
   };
-
-  const paymentMethods: PaymentMethod[] = [
-    { id: 'card', name: 'Credit / Debit Card', icon: (
-      <div className="flex items-center gap-1">
-        <SiVisa className="w-6 h-6 text-[#1434CB]" />
-        <SiMastercard className="w-6 h-6 text-[#EB001B]" />
-        <SiAmericanexpress className="w-6 h-6 text-[#006FCF]" />
-      </div>
-    ) },
-    { id: 'paypal', name: 'PayPal', icon: <FaPaypal className="w-6 h-6 text-[#003087]" /> },
-    { id: 'apple', name: 'Apple Pay', icon: <FaApplePay className="w-6 h-6 text-[#333333]" /> },
-    { id: 'google', name: 'Google Pay', icon: <FaGooglePay className="w-6 h-6 text-[#5F6368]" /> },
-  ];
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -143,26 +108,42 @@ export default function CheckoutPage() {
     
     setIsProcessing(true);
     try {
-      // Simulate order processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Clear cart and redirect to success page
-      clearCart();
-      toast.success('Order placed successfully! 🎉');
-      router.push('/order-success');
+      const { url } = await orderService.startStripeCheckout({
+        firstName: billingDetails.firstName.trim(),
+        lastName: billingDetails.lastName.trim(),
+        email: billingDetails.email.trim(),
+        phone: billingDetails.phone.trim(),
+        address: billingDetails.address.trim(),
+        ...(billingDetails.apartment.trim() && { apartment: billingDetails.apartment.trim() }),
+        city: billingDetails.city.trim(),
+        postcode: billingDetails.postcode.trim(),
+        country: billingDetails.country,
+        deliveryMethod: selectedDelivery,
+        items: cartItems.map((item) => ({
+          productId: item.id,
+          ...(item.variantId && { variantId: item.variantId }),
+          quantity: item.quantity,
+        })),
+      });
+      // The basket is emptied on the confirmation page, once payment is confirmed.
+      window.location.assign(url);
     } catch (error) {
-      toast.error('Something went wrong. Please try again.');
-    } finally {
+      toast.error(orderErrorMessage(error), { duration: 6000 });
       setIsProcessing(false);
     }
   };
 
-  // Redirect if cart is empty
+  // Coming back from Stripe without paying: the basket is still here.
   useEffect(() => {
-    if (cartItems.length === 0 && typeof window !== 'undefined') {
-      router.push('/');
+    if (new URLSearchParams(window.location.search).get('cancelled') === '1') {
+      toast('Payment cancelled. Your basket is saved, so you can try again.', { icon: 'ℹ️', duration: 6000 });
+      window.history.replaceState(null, '', '/checkout');
     }
-  }, [cartItems, router]);
+  }, []);
+
+  if (!isReady) {
+    return <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100" aria-busy="true" />;
+  }
 
   if (cartItems.length === 0) {
     return (
@@ -446,7 +427,7 @@ export default function CheckoutPage() {
                             name="delivery"
                             value={option.id}
                             checked={selectedDelivery === option.id}
-                            onChange={(e) => setSelectedDelivery(e.target.value)}
+                            onChange={(e) => setSelectedDelivery(e.target.value as DeliveryMethod)}
                             className="w-4 h-4 text-blue-600"
                           />
                           <div className="flex-1">
@@ -477,9 +458,9 @@ export default function CheckoutPage() {
                       <div>
                         <p className="text-sm font-semibold text-amber-800">Estimated Delivery Date</p>
                         <p className="text-sm text-amber-700 mt-1">
-                          {selectedDeliveryOption?.estimated}
+                          {deliveryOptions.find((o) => o.id === selectedDelivery)?.estimated}
                         </p>
-                        <p className="text-xs text-amber-600 mt-1">Free shipping on orders over £50</p>
+                        <p className="text-xs text-amber-600 mt-1">Standard delivery is free on orders over £50</p>
                       </div>
                     </div>
                   </div>
@@ -506,115 +487,37 @@ export default function CheckoutPage() {
               {/* Step 3: Payment Method */}
               {step === 3 && (
                 <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">
-                  <h2 className="text-xl font-bold text-gray-900 mb-6">Payment Method</h2>
-                  
-                  <div className="space-y-3">
-                    {paymentMethods.map((method) => (
-                      <label
-                        key={method.id}
-                        className={`flex items-center justify-between p-4 border-2 rounded-xl cursor-pointer transition-all ${
-                          selectedPayment === method.id
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-200 hover:border-blue-300 bg-white'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <input
-                            type="radio"
-                            name="payment"
-                            value={method.id}
-                            checked={selectedPayment === method.id}
-                            onChange={(e) => setSelectedPayment(e.target.value)}
-                            className="w-4 h-4 text-blue-600"
-                          />
-                          <span className={`font-semibold ${selectedPayment === method.id ? 'text-gray-900' : 'text-gray-700'}`}>
-                            {method.name}
-                          </span>
-                        </div>
-                        {method.icon}
-                      </label>
-                    ))}
+                  <h2 className="text-xl font-bold text-gray-900 mb-6">Payment</h2>
+
+                  <div className="p-5 border-2 border-blue-500 bg-blue-50 rounded-xl">
+                    <div className="flex items-start gap-3">
+                      <FaLock className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
+                      <div>
+                        <p className="font-semibold text-gray-900">Pay securely with Stripe</p>
+                        <p className="text-sm text-gray-600 mt-1">
+                          You will go to Stripe&apos;s secure payment page to pay by card, Apple Pay, Google Pay, PayPal or Klarna.
+                          Your card details are never shared with us.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3 mt-4" aria-label="Accepted payment methods">
+                      <SiVisa className="w-8 h-8 text-[#1434CB]" title="Visa" />
+                      <SiMastercard className="w-8 h-8 text-[#EB001B]" title="Mastercard" />
+                      <SiAmericanexpress className="w-7 h-7 text-[#006FCF]" title="American Express" />
+                      <FaApplePay className="w-9 h-9 text-gray-900" title="Apple Pay" />
+                      <FaGooglePay className="w-9 h-9 text-gray-700" title="Google Pay" />
+                      <FaPaypal className="w-6 h-6 text-[#003087]" title="PayPal" />
+                      <span className="px-2 py-0.5 rounded-md bg-[#FFA8CD] text-black text-xs font-bold">Klarna</span>
+                    </div>
                   </div>
 
-                  {selectedPayment === 'card' && (
-                    <div className="mt-6 space-y-4">
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          Card Number
-                        </label>
-                        <div className="relative">
-                          <FaCreditCard className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                          <input
-                            type="text"
-                            placeholder="1234 5678 9012 3456"
-                            className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition bg-white text-gray-900 placeholder-gray-400"
-                          />
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-2">
-                            Expiry Date
-                          </label>
-                          <input
-                            type="text"
-                            placeholder="MM/YY"
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition bg-white text-gray-900 placeholder-gray-400"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-2">
-                            CVV
-                          </label>
-                          <input
-                            type="text"
-                            placeholder="123"
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition bg-white text-gray-900 placeholder-gray-400"
-                          />
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-gray-500">
-                        <FaLock className="w-3 h-3" />
-                        <span>Your payment information is secure and encrypted</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {selectedPayment === 'paypal' && (
-                    <div className="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
-                      <div className="flex items-center gap-3">
-                        <FaPaypal className="w-8 h-8 text-[#003087]" />
-                        <div>
-                          <p className="font-semibold text-gray-900">Pay with PayPal</p>
-                          <p className="text-sm text-gray-600">You will be redirected to PayPal to complete your payment</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {selectedPayment === 'apple' && (
-                    <div className="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
-                      <div className="flex items-center gap-3">
-                        <FaApplePay className="w-8 h-8 text-gray-800" />
-                        <div>
-                          <p className="font-semibold text-gray-900">Apple Pay</p>
-                          <p className="text-sm text-gray-600">Pay securely using your Apple device</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {selectedPayment === 'google' && (
-                    <div className="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
-                      <div className="flex items-center gap-3">
-                        <FaGooglePay className="w-8 h-8 text-gray-700" />
-                        <div>
-                          <p className="font-semibold text-gray-900">Google Pay</p>
-                          <p className="text-sm text-gray-600">Pay securely using your Google account</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                  <div className="mt-4 rounded-xl border border-gray-200 p-4 text-sm text-gray-700">
+                    <p className="font-semibold text-gray-900 mb-1">Delivering to</p>
+                    <p>{billingDetails.firstName} {billingDetails.lastName}</p>
+                    <p>{billingDetails.address}{billingDetails.apartment ? `, ${billingDetails.apartment}` : ''}</p>
+                    <p>{billingDetails.city} {billingDetails.postcode.toUpperCase()}</p>
+                    <p className="mt-1 text-gray-500">{deliveryOptions.find((o) => o.id === selectedDelivery)?.name}</p>
+                  </div>
 
                   <div className="flex gap-4 mt-8">
                     <button
@@ -632,10 +535,10 @@ export default function CheckoutPage() {
                       {isProcessing ? (
                         <div className="flex items-center justify-center gap-2">
                           <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                          Processing...
+                          Opening secure payment...
                         </div>
                       ) : (
-                        `Place Order - £${formatPrice(total)}`
+                        `Pay £${formatPrice(total)}`
                       )}
                     </button>
                   </div>
@@ -713,11 +616,11 @@ export default function CheckoutPage() {
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Tax (VAT 20%)</span>
+                  <span className="text-gray-600">Includes VAT (20%)</span>
                   <span className="font-semibold text-gray-900">£{formatPrice(tax)}</span>
                 </div>
                 
-                {shipping > 0 && subtotal < 50 && (
+                {selectedDelivery === 'standard' && shipping > 0 && subtotal < 50 && (
                   <div className="bg-amber-50 rounded-xl p-3">
                     <p className="text-xs font-medium text-amber-800">
                       Add £{(50 - subtotal).toFixed(2)} more to get FREE delivery!

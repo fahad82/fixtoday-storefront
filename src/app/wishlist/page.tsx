@@ -3,6 +3,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import Navbar from '../../components/common/Navbar';
@@ -27,10 +28,15 @@ const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1505740420928-5e560c06
 export default function WishlistPage() {
   const { wishlist, removeFromWishlist, clearWishlist } = useWishlist();
   const { addToCart } = useCart();
+  const router = useRouter();
   const [isRemoving, setIsRemoving] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState<string | null>(null);
 
   const handleAddToCart = async (product: Product) => {
+    if (product.has_variants) {
+      router.push(`/product/${product.slug}`);
+      return;
+    }
     setIsAdding(product.id);
     try {
       await addToCart(product);
