@@ -3,6 +3,7 @@ import axios from 'axios';
 import { api } from './api';
 import type { CustomerOrder } from './orderService';
 import type { TrackedRepair } from './repairService';
+import type { TradeIn } from './tradeInService';
 
 export interface Account {
   id: string;
@@ -55,6 +56,9 @@ export const accountService = {
   },
   async repairs(): Promise<AccountRepair[]> {
     return (await api.get<{ repairs: AccountRepair[] }>('/api/account/repairs')).repairs;
+  },
+  async tradeIns(): Promise<TradeIn[]> {
+    return (await api.get<{ trade_ins: TradeIn[] }>('/api/account/trade-ins')).trade_ins;
   },
   async addRepair(repair_number: string, tracking_code: string): Promise<AccountRepair> {
     return (await api.post<{ repair: AccountRepair }>('/api/account/repairs/add', { repair_number, tracking_code })).repair;
